@@ -28,6 +28,9 @@ Acest checklist este pentru demo si pentru verificarea cerintelor obligatorii.
 - [x] Formulare cu validare client-side.
 - [x] Dropdown-uri pentru relatii in loc de ID-uri brute.
 - [x] Rezervare user fara completare manuala `clientId`.
+- [x] User nou primeste client asociat prin `/api/clients/me`.
+- [x] User poate cumpara abonament prin `/api/subscriptions/me/purchase`.
+- [x] User vede date proprii prin endpoint-uri `/me`: abonamente, rezervari, plati si notificari.
 - [x] Pagina 404.
 
 ## Testing

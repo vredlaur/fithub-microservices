@@ -27,26 +27,31 @@ Deschide:
 1. Intra pe frontend.
 2. Login cu `admin` / `Admin123!`.
 3. Arata meniul admin.
-4. Deschide `Admin > Clase`.
-5. Creeaza sau editeaza o clasa folosind dropdown-uri pentru tip clasa, antrenor si sala.
-6. Arata ca formularele valideaza campuri obligatorii, email, numere pozitive si intervale de date.
+4. Deschide `Admin > Utilizatori` si arata ca numele, prenumele si telefonul sunt afisate corect.
+5. Deschide `Admin > Clase`.
+6. Creeaza sau editeaza o clasa folosind dropdown-uri pentru tip clasa, antrenor si sala.
+7. Arata ca formularele valideaza campuri obligatorii, email, numere pozitive si intervale de date.
 
-## 3. Login User Si Rezervare
+## 3. Login/Register User, Abonament Si Rezervare
 
 1. Logout.
-2. Login cu `user` / `User123!`.
-3. Deschide `Clase`.
-4. Alege o clasa si apasa rezervare.
-5. Explica faptul ca frontend-ul cere automat `/api/clients/me`, deci userul nu introduce `clientId`.
-6. Deschide `Rezervari` si `Notificari`.
-7. Explica faptul ca `booking-service` verifica abonamentul activ si apoi apeleaza `gym-service` prin Feign.
+2. Login cu `user` / `User123!` sau creeaza un cont nou prin `Register`.
+3. Daca folosesti cont nou, deschide `Abonamente` si apasa `Cumpara`.
+4. Explica faptul ca frontend-ul creeaza clientul curent cu `/api/clients/me` si cumpara abonamentul cu `/api/subscriptions/me/purchase`.
+5. Deschide `Clase`.
+6. Alege o clasa si apasa rezervare.
+7. Explica faptul ca frontend-ul trimite doar `fitnessClassId` catre `/api/bookings/me`; userul nu introduce `clientId`.
+8. Deschide `Rezervari`, `Abonamente` si `Notificari`.
+9. Explica faptul ca `booking-service` verifica abonamentul activ si apoi apeleaza `gym-service` prin Feign.
 
 ## 4. Verificare In pgAdmin
 
 In `fithub_booking_db` verifica:
+- `clients`
+- `client_subscriptions`
+- `payments`
 - `bookings`
 - `notifications`
-- `client_subscriptions`
 
 In `fithub_gym_db` verifica:
 - `fitness_classes.available_slots`

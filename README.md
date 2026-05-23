@@ -100,12 +100,14 @@ Pentru un demo curat, ruleaza `.\scripts\demo-reset.ps1`. Seed data creeaza cont
 
 1. Login cu `admin`.
 2. Admin verifica sau creeaza locatie, sala, antrenor, tip clasa si clasa fitness folosind dropdown-urile din paginile CRUD.
-3. Login cu `user`.
-4. User vede clasele disponibile.
-5. User face rezervare fara sa completeze manual `clientId`; frontend-ul foloseste `/api/clients/me`.
-6. `booking-service` verifica abonamentul activ si cere catre `gym-service` rezervarea unui slot.
-7. Se creeaza rezervarea si notificarea.
-8. In Eureka apar `AUTH-SERVICE`, `GYM-SERVICE`, `BOOKING-SERVICE`, `API-GATEWAY`.
+3. Admin verifica pagina `Utilizatori`, unde profilul afiseaza nume, prenume si telefon.
+4. Login cu `user` sau register cu un user nou.
+5. User cumpara abonament din `/subscriptions`; frontend-ul foloseste `/api/subscriptions/me/purchase`.
+6. User vede clasele disponibile.
+7. User face rezervare fara sa completeze manual `clientId`; frontend-ul foloseste `/api/bookings/me`.
+8. `booking-service` verifica abonamentul activ si cere catre `gym-service` rezervarea unui slot.
+9. Se creeaza rezervarea, plata si notificarea.
+10. In Eureka apar `AUTH-SERVICE`, `GYM-SERVICE`, `BOOKING-SERVICE`, `API-GATEWAY`.
 
 Verificare automata:
 
@@ -113,7 +115,7 @@ Verificare automata:
 .\scripts\demo-check.ps1
 ```
 
-Scriptul verifica health checks, login, Eureka, `/api/clients/me`, lista de clase si fluxul de rezervare prin API Gateway.
+Scriptul verifica health checks, login, Eureka, `/api/clients/me`, lista de clase si fluxul de rezervare prin API Gateway folosind endpoint-ul `/api/bookings/me`.
 
 ## Checklist Cerinte
 
@@ -139,9 +141,13 @@ Scriptul verifica health checks, login, Eureka, `/api/clients/me`, lista de clas
 - Screenshots:
   - `docs/screenshots/frontend-dashboard.png`
   - `docs/screenshots/admin-classes-dropdowns.png`
+  - `docs/screenshots/admin-users-profile.png`
+  - `docs/screenshots/subscriptions-purchase.png`
+  - `docs/screenshots/bookings-confirmed.png`
   - `docs/screenshots/frontend-404.png`
   - `docs/screenshots/eureka-services.png`
   - `docs/screenshots/swagger-auth.png`
+  - `docs/screenshots/swagger-booking.png`
 
 ## Branch Strategy
 
