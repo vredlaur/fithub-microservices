@@ -52,6 +52,18 @@ cd ..\..
 docker compose up --build
 ```
 
+Verificare automata pentru demo:
+
+```powershell
+.\scripts\demo-check.ps1
+```
+
+Reset complet pentru demo curat:
+
+```powershell
+.\scripts\demo-reset.ps1
+```
+
 ## Dovezi In Demo
 
 - Eureka arata `AUTH-SERVICE`, `GYM-SERVICE`, `BOOKING-SERVICE`, `API-GATEWAY`.

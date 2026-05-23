@@ -61,6 +61,18 @@ Docker Compose:
 docker compose up --build
 ```
 
+Demo rapid in 5 minute:
+
+```powershell
+.\scripts\demo-reset.ps1
+```
+
+Comanda de mai sus sterge volumul PostgreSQL, reconstruieste containerele, porneste aplicatia si ruleaza verificarea automata. Pentru verificare fara reset:
+
+```powershell
+.\scripts\demo-check.ps1
+```
+
 URL-uri:
 - Frontend: http://localhost:5173
 - API Gateway: http://localhost:8080
@@ -82,6 +94,8 @@ Un singur container PostgreSQL contine baze separate:
 
 Pentru teste, serviciile folosesc H2 in-memory prin profilul `test`.
 
+Pentru un demo curat, ruleaza `.\scripts\demo-reset.ps1`. Seed data creeaza conturile `admin` si `user`, o locatie, o sala, un trainer, o clasa fitness, un client legat de userul demo, un abonament activ si o plata.
+
 ## Flux Demo Principal
 
 1. Login cu `admin`.
@@ -92,6 +106,14 @@ Pentru teste, serviciile folosesc H2 in-memory prin profilul `test`.
 6. `booking-service` verifica abonamentul activ si cere catre `gym-service` rezervarea unui slot.
 7. Se creeaza rezervarea si notificarea.
 8. In Eureka apar `AUTH-SERVICE`, `GYM-SERVICE`, `BOOKING-SERVICE`, `API-GATEWAY`.
+
+Verificare automata:
+
+```powershell
+.\scripts\demo-check.ps1
+```
+
+Scriptul verifica health checks, login, Eureka, `/api/clients/me`, lista de clase si fluxul de rezervare prin API Gateway.
 
 ## Checklist Cerinte
 
