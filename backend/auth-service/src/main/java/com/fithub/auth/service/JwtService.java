@@ -35,6 +35,7 @@ public class JwtService {
         Instant now = Instant.now();
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("sub", user.getUsername());
+        payload.put("userId", user.getId());
         payload.put("roles", user.getRoles().stream().map(role -> role.getName()).toList());
         payload.put("iat", now.getEpochSecond());
         payload.put("exp", now.plusSeconds(expirationMinutes * 60).getEpochSecond());
@@ -53,6 +54,14 @@ public class JwtService {
 
     public String username(String token) {
         return (String) payload(token).get("sub");
+    }
+
+    public Long userId(String token) {
+        Object userId = payload(token).get("userId");
+        if (userId instanceof Number number) {
+            return number.longValue();
+        }
+        throw new IllegalArgumentException("Token JWT fara userId.");
     }
 
     @SuppressWarnings("unchecked")

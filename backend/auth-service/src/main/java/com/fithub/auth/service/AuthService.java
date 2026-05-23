@@ -89,6 +89,7 @@ public class AuthService {
 
     private AuthResponse response(User user) {
         return new AuthResponse(
+            user.getId(),
             jwtService.generateToken(user),
             user.getUsername(),
             user.getEmail(),

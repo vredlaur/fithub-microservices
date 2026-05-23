@@ -35,6 +35,14 @@ public class JwtService {
         return (String) payload(token).get("sub");
     }
 
+    public Long userId(String token) {
+        Object userId = payload(token).get("userId");
+        if (userId instanceof Number number) {
+            return number.longValue();
+        }
+        throw new IllegalArgumentException("Token JWT fara userId.");
+    }
+
     @SuppressWarnings("unchecked")
     public List<String> roles(String token) {
         Object roles = payload(token).get("roles");

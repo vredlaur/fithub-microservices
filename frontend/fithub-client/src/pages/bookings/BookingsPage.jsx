@@ -1,35 +1,61 @@
 import { Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { errorMessage, http } from '../../api/http.js'
 
+function classLabel(item) {
+  if (!item) return ''
+  const date = item.startTime ? item.startTime.replace('T', ' ').slice(0, 16) : ''
+  return `${item.name} - ${date} - ${item.availableSlots}/${item.capacity} locuri`
+}
+
 export function BookingsPage() {
   const [items, setItems] = useState([])
+  const [classes, setClasses] = useState([])
+  const [currentClient, setCurrentClient] = useState(null)
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [sort, setSort] = useState('bookingDate,desc')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const { register, handleSubmit, reset, formState } = useForm({ defaultValues: { clientId: 1, fitnessClassId: 1 } })
+  const { register, handleSubmit, reset, formState } = useForm({ defaultValues: { fitnessClassId: '' } })
 
-  const load = useCallback(async () => {
+  const classById = useMemo(() => new Map(classes.map((item) => [item.id, item])), [classes])
+
+  const loadBookings = useCallback(async () => {
     const { data } = await http.get('/bookings', { params: { page, size: 8, sort } })
     setItems(data.content || [])
     setTotalPages(data.totalPages || 1)
   }, [page, sort])
 
+  const loadContext = useCallback(async () => {
+    const [clientResponse, classesResponse] = await Promise.all([
+      http.get('/clients/me'),
+      http.get('/classes', { params: { page: 0, size: 100, sort: 'startTime,asc' } }),
+    ])
+    const loadedClasses = classesResponse.data.content || []
+    setCurrentClient(clientResponse.data)
+    setClasses(loadedClasses)
+    reset({ fitnessClassId: loadedClasses[0] ? String(loadedClasses[0].id) : '' })
+  }, [reset])
+
   useEffect(() => {
-    load().catch((exception) => setError(errorMessage(exception)))
-  }, [load])
+    setError('')
+    Promise.all([loadBookings(), loadContext()]).catch((exception) => setError(errorMessage(exception)))
+  }, [loadBookings, loadContext])
 
   async function create(values) {
     setError('')
     setMessage('')
     try {
-      await http.post('/bookings', { clientId: Number(values.clientId), fitnessClassId: Number(values.fitnessClassId) })
-      reset({ clientId: values.clientId, fitnessClassId: '' })
+      if (!currentClient) throw new Error('Clientul contului curent nu este incarcat.')
+      await http.post('/bookings', {
+        clientId: currentClient.id,
+        fitnessClassId: Number(values.fitnessClassId),
+      })
+      reset({ fitnessClassId: values.fitnessClassId })
       setMessage('Rezervarea a fost creata.')
-      await load()
+      await Promise.all([loadBookings(), loadContext()])
     } catch (exception) {
       setError(errorMessage(exception))
     }
@@ -37,15 +63,19 @@ export function BookingsPage() {
 
   async function remove(item) {
     if (!window.confirm(`Anulezi rezervarea #${item.id}?`)) return
-    await http.delete(`/bookings/${item.id}`)
-    await load()
+    try {
+      await http.delete(`/bookings/${item.id}`)
+      await Promise.all([loadBookings(), loadContext()])
+    } catch (exception) {
+      setError(errorMessage(exception))
+    }
   }
 
   return (
     <>
       <div className="mb-3">
         <h1 className="page-title">Rezervari</h1>
-        <div className="muted">Rezervarile folosesc booking-service si gym-service prin Feign.</div>
+        <div className="muted">Rezervarea foloseste automat clientul asociat contului autentificat.</div>
       </div>
       {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
@@ -62,11 +92,14 @@ export function BookingsPage() {
           <table className="table table-sm align-middle">
             <thead><tr><th>ID</th><th>Client</th><th>Clasa</th><th>Data</th><th>Status</th><th></th></tr></thead>
             <tbody>
+              {items.length === 0 && (
+                <tr><td colSpan="6">Nu exista rezervari.</td></tr>
+              )}
               {items.map((item) => (
                 <tr key={item.id}>
                   <td>{item.id}</td>
                   <td>{item.client?.firstName} {item.client?.lastName}</td>
-                  <td>#{item.fitnessClassId}</td>
+                  <td>{classById.get(item.fitnessClassId)?.name || `#${item.fitnessClassId}`}</td>
                   <td>{item.bookingDate?.replace('T', ' ').slice(0, 16)}</td>
                   <td>{item.status}</td>
                   <td className="text-end">
@@ -84,11 +117,21 @@ export function BookingsPage() {
         </section>
         <form className="panel" onSubmit={handleSubmit(create)}>
           <h2 className="h5 fw-bold">Rezervare noua</h2>
-          <label className="form-label">ID client</label>
-          <input className="form-control mb-2" type="number" {...register('clientId', { required: true })} />
-          <label className="form-label">ID clasa fitness</label>
-          <input className="form-control" type="number" {...register('fitnessClassId', { required: true })} />
-          <button className="btn btn-brand mt-3" type="submit" disabled={formState.isSubmitting}>Rezerva</button>
+          <div className="mb-3">
+            <div className="form-label">Client</div>
+            <div className="form-control bg-light">
+              {currentClient ? `${currentClient.firstName} ${currentClient.lastName}` : 'Se incarca...'}
+            </div>
+          </div>
+          <label className="form-label">Clasa fitness</label>
+          <select className="form-select" {...register('fitnessClassId', { required: 'Clasa este obligatorie.' })}>
+            <option value="">Alege clasa...</option>
+            {classes.map((item) => (
+              <option key={item.id} value={item.id}>{classLabel(item)}</option>
+            ))}
+          </select>
+          <div className="text-danger small">{formState.errors.fitnessClassId?.message}</div>
+          <button className="btn btn-brand mt-3" type="submit" disabled={formState.isSubmitting || !currentClient}>Rezerva</button>
         </form>
       </div>
     </>

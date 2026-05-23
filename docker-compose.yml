@@ -28,7 +28,8 @@ services:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 180s
 
   api-gateway:
     build:

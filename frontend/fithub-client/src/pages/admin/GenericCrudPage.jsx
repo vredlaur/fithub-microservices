@@ -3,24 +3,54 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { errorMessage, http } from '../../api/http.js'
 
-function display(value) {
-  if (value === null || value === undefined) return '-'
-  if (typeof value === 'object') return value.name || value.email || value.id || JSON.stringify(value)
+function extractItems(data) {
+  return data?.content || data || []
+}
+
+function optionText(value, field = {}) {
+  if (value === null || value === undefined || value === '') return '-'
+  if (Array.isArray(value)) return value.map((item) => optionText(item, field)).join(', ')
+  if (typeof value !== 'object') return String(value)
+
+  const labelConfig = field.optionLabel
+  if (Array.isArray(labelConfig)) {
+    const text = labelConfig
+      .map((key) => (key === 'id' ? `#${value[key]}` : value[key]))
+      .filter((part) => part !== undefined && part !== null && part !== '')
+      .join(' - ')
+    if (text) return text
+  }
+
+  if (typeof labelConfig === 'string' && value[labelConfig]) return String(value[labelConfig])
+  return value.name || value.email || value.username || value.id || JSON.stringify(value)
+}
+
+function display(value, field) {
   if (typeof value === 'boolean') return value ? 'Da' : 'Nu'
-  return String(value)
+  return optionText(value, field)
 }
 
 function initialValues(fields) {
-  return Object.fromEntries(fields.map((field) => [field.name, field.type === 'checkbox' ? true : '']))
+  return Object.fromEntries(fields.map((field) => {
+    if (field.type === 'checkbox') return [field.name, true]
+    if (field.type === 'relationMulti') return [field.name, []]
+    return [field.name, '']
+  }))
+}
+
+function relationValue(value, field) {
+  if (!value) return ''
+  const key = field.valueKey || 'id'
+  return value[key] ?? ''
 }
 
 function flatten(entity, fields) {
   const values = {}
   for (const field of fields) {
     const value = entity[field.name]
-    if (field.type === 'relation') values[field.name] = value?.id || ''
+    if (field.type === 'relation') values[field.name] = relationValue(value, field)
+    else if (field.type === 'relationMulti') values[field.name] = Array.isArray(value) ? value.map((item) => relationValue(item, field)) : []
     else if (field.type === 'datetime-local') values[field.name] = value ? value.slice(0, 16) : ''
-    else if (field.name === 'roles') values[field.name] = value?.map?.((role) => role.name || role).join(',') || ''
     else values[field.name] = value ?? (field.type === 'checkbox' ? false : '')
   }
   return values
@@ -30,13 +60,24 @@ function payload(values, fields) {
   const result = {}
   for (const field of fields) {
     const value = values[field.name]
-    if (field.type === 'relation') result[field.name] = value ? { id: Number(value) } : null
-    else if (field.type === 'number') result[field.name] = value === '' ? null : Number(value)
-    else if (field.type === 'checkbox') result[field.name] = Boolean(value)
-    else if (field.name === 'roles') result[field.name] = value ? value.split(',').map((role) => role.trim()).filter(Boolean) : ['USER']
-    else result[field.name] = value
+    if (field.type === 'relation') {
+      result[field.name] = value ? { id: Number(value) } : null
+    } else if (field.type === 'relationMulti') {
+      const list = Array.isArray(value) ? value : [value].filter(Boolean)
+      result[field.name] = field.valueKey === 'name' ? list : list.map((id) => ({ id: Number(id) }))
+    } else if (field.type === 'number') {
+      result[field.name] = value === '' ? null : Number(value)
+    } else if (field.type === 'checkbox') {
+      result[field.name] = Boolean(value)
+    } else {
+      result[field.name] = value
+    }
   }
   return result
+}
+
+function inputType(field) {
+  return field.type && !field.type.startsWith('relation') ? field.type : 'text'
 }
 
 export function GenericCrudPage({ config }) {
@@ -47,18 +88,32 @@ export function GenericCrudPage({ config }) {
   const [editing, setEditing] = useState(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [relationOptions, setRelationOptions] = useState({})
   const { register, handleSubmit, reset, formState } = useForm({ defaultValues: initialValues(config.fields) })
 
+  const relationFields = useMemo(() => config.fields.filter((field) => field.source), [config.fields])
   const columns = useMemo(() => ['id', ...config.fields.slice(0, 5).map((field) => field.name)], [config.fields])
+
+  const loadRelations = useCallback(async () => {
+    const entries = await Promise.all(relationFields.map(async (field) => {
+      const { data } = await http.get(field.source, { params: { page: 0, size: 100, sort: 'id,asc' } })
+      return [field.name, extractItems(data)]
+    }))
+    setRelationOptions(Object.fromEntries(entries))
+  }, [relationFields])
 
   const load = useCallback(async () => {
     setError('')
+    setLoading(true)
     try {
       const { data } = await http.get(config.endpoint, { params: { page, size: 8, sort } })
-      setItems(data.content || data)
+      setItems(extractItems(data))
       setTotalPages(data.totalPages || 1)
     } catch (exception) {
       setError(errorMessage(exception))
+    } finally {
+      setLoading(false)
     }
   }, [config.endpoint, page, sort])
 
@@ -66,11 +121,17 @@ export function GenericCrudPage({ config }) {
     reset(initialValues(config.fields))
     setEditing(null)
     setPage(0)
+    setMessage('')
+    setError('')
   }, [config, reset])
 
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    loadRelations().catch((exception) => setError(errorMessage(exception)))
+  }, [loadRelations])
 
   async function onSubmit(values) {
     setError('')
@@ -82,7 +143,7 @@ export function GenericCrudPage({ config }) {
       reset(initialValues(config.fields))
       setEditing(null)
       setMessage('Modificarile au fost salvate.')
-      await load()
+      await Promise.all([load(), loadRelations()])
     } catch (exception) {
       setError(errorMessage(exception))
     }
@@ -108,11 +169,60 @@ export function GenericCrudPage({ config }) {
     reset(initialValues(config.fields))
   }
 
+  function renderField(field) {
+    if (field.type === 'checkbox') {
+      return (
+        <div key={field.name} className="span-2 form-check mt-2">
+          <input className="form-check-input" type="checkbox" {...register(field.name)} />
+          <label className="form-check-label">{field.label}</label>
+        </div>
+      )
+    }
+
+    if (field.type === 'relation' || field.type === 'relationMulti') {
+      const multiple = field.type === 'relationMulti'
+      return (
+        <div key={field.name}>
+          <label className="form-label">{field.label}</label>
+          <select
+            className="form-select"
+            multiple={multiple}
+            {...register(field.name, { required: field.required ? 'Camp obligatoriu.' : false })}
+          >
+            {!multiple && <option value="">Alege...</option>}
+            {(relationOptions[field.name] || []).map((option) => (
+              <option key={relationValue(option, field)} value={relationValue(option, field)}>
+                {optionText(option, field)}
+              </option>
+            ))}
+          </select>
+          <div className="form-text">
+            {(relationOptions[field.name] || []).length === 0 ? 'Nu exista optiuni disponibile.' : ''}
+          </div>
+          <div className="text-danger small">{formState.errors[field.name]?.message}</div>
+        </div>
+      )
+    }
+
+    return (
+      <div key={field.name}>
+        <label className="form-label">{field.label}</label>
+        <input
+          className="form-control"
+          type={inputType(field)}
+          placeholder={field.placeholder || ''}
+          {...register(field.name, { required: field.required ? 'Camp obligatoriu.' : false })}
+        />
+        <div className="text-danger small">{formState.errors[field.name]?.message}</div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="mb-3">
         <h1 className="page-title">{config.title}</h1>
-        <div className="muted">CRUD cu paginare si sortare prin API Gateway.</div>
+        <div className="muted">CRUD cu paginare, sortare si dropdown-uri pentru relatii.</div>
       </div>
       {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
@@ -140,9 +250,18 @@ export function GenericCrudPage({ config }) {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {loading && (
+                  <tr><td colSpan={columns.length + 1}>Se incarca...</td></tr>
+                )}
+                {!loading && items.length === 0 && (
+                  <tr><td colSpan={columns.length + 1}>Nu exista inregistrari.</td></tr>
+                )}
+                {!loading && items.map((item) => (
                   <tr key={item.id}>
-                    {columns.map((column) => <td key={column}>{display(item[column])}</td>)}
+                    {columns.map((column) => {
+                      const field = config.fields.find((candidate) => candidate.name === column)
+                      return <td key={column}>{display(item[column], field)}</td>
+                    })}
                     <td className="text-end">
                       <button className="btn btn-outline-secondary btn-sm me-1" onClick={() => onEdit(item)} title="Editare">
                         <Edit size={15} />
@@ -163,27 +282,7 @@ export function GenericCrudPage({ config }) {
             {editing && <button className="btn btn-outline-secondary btn-sm" type="button" onClick={cancelEdit}><X size={15} /></button>}
           </div>
           <div className="form-grid">
-            {config.fields.map((field) => (
-              <div key={field.name} className={field.type === 'checkbox' ? 'span-2 form-check mt-2' : ''}>
-                {field.type === 'checkbox' ? (
-                  <>
-                    <input className="form-check-input" type="checkbox" {...register(field.name)} />
-                    <label className="form-check-label">{field.label}</label>
-                  </>
-                ) : (
-                  <>
-                    <label className="form-label">{field.label}</label>
-                    <input
-                      className="form-control"
-                      type={field.type || 'text'}
-                      placeholder={field.placeholder || ''}
-                      {...register(field.name, { required: field.required ? 'Camp obligatoriu.' : false })}
-                    />
-                    <div className="text-danger small">{formState.errors[field.name]?.message}</div>
-                  </>
-                )}
-              </div>
-            ))}
+            {config.fields.map((field) => renderField(field))}
           </div>
           <button className="btn btn-brand mt-3" type="submit" disabled={formState.isSubmitting}>
             <Plus size={16} /> Salveaza

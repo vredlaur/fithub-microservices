@@ -13,5 +13,5 @@ http.interceptors.request.use((config) => {
 })
 
 export function errorMessage(error) {
-  return error?.response?.data?.message || 'A aparut o eroare. Verifica serviciile backend.'
+  return error?.response?.data?.message || error?.message || 'A aparut o eroare. Verifica serviciile backend.'
 }

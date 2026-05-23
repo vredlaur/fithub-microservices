@@ -42,7 +42,7 @@ export function ClassesPage() {
                 <h2 className="h5 fw-bold">{item.name}</h2>
                 <span className="badge text-bg-success">{item.availableSlots}/{item.capacity}</span>
               </div>
-              <div className="muted small mb-2">{item.classType?.name} · {item.trainer?.firstName} {item.trainer?.lastName}</div>
+              <div className="muted small mb-2">{item.classType?.name} - {item.trainer?.firstName} {item.trainer?.lastName}</div>
               <div className="d-flex align-items-center gap-2 mb-3">
                 <CalendarDays size={16} />
                 <span>{item.startTime?.replace('T', ' ').slice(0, 16)}</span>

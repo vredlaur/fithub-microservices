@@ -40,7 +40,11 @@ class AuthServiceTest {
         when(userRepository.existsByEmail("ana@fithub.local")).thenReturn(false);
         when(roleRepository.findByName("USER")).thenReturn(Optional.of(role));
         when(passwordEncoder.encode("Password1")).thenReturn("hashed");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(10L);
+            return user;
+        });
         when(jwtService.generateToken(any(User.class))).thenReturn("jwt");
 
         var response = authService.register(new RegisterRequest(
@@ -52,6 +56,7 @@ class AuthServiceTest {
             "0700000000"
         ));
 
+        assertThat(response.userId()).isEqualTo(10L);
         assertThat(response.token()).isEqualTo("jwt");
         assertThat(response.roles()).containsExactly("USER");
     }

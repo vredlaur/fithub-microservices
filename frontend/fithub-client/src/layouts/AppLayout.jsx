@@ -29,6 +29,8 @@ const adminLinks = [
   { to: '/admin/class-types', label: 'Tipuri clase', icon: Layers },
   { to: '/admin/classes', label: 'Clase admin', icon: Dumbbell },
   { to: '/admin/subscription-types', label: 'Tipuri abonamente', icon: Receipt },
+  { to: '/admin/subscriptions', label: 'Abonamente clienti', icon: Receipt },
+  { to: '/admin/payments', label: 'Plati', icon: Receipt },
   { to: '/admin/clients', label: 'Clienti', icon: Users },
 ]
 

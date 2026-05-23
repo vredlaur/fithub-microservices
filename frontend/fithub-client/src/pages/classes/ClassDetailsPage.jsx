@@ -1,34 +1,41 @@
 import { CalendarCheck } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
 import { useParams } from 'react-router-dom'
 import { errorMessage, http } from '../../api/http.js'
 
 export function ClassDetailsPage() {
   const { id } = useParams()
   const [fitnessClass, setFitnessClass] = useState(null)
+  const [currentClient, setCurrentClient] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const { register, handleSubmit, formState } = useForm({ defaultValues: { clientId: 1 } })
 
   const load = useCallback(async () => {
-    const { data } = await http.get(`/classes/${id}`)
-    setFitnessClass(data)
+    const [classResponse, clientResponse] = await Promise.all([
+      http.get(`/classes/${id}`),
+      http.get('/clients/me'),
+    ])
+    setFitnessClass(classResponse.data)
+    setCurrentClient(clientResponse.data)
   }, [id])
 
   useEffect(() => {
     load().catch((exception) => setError(errorMessage(exception)))
   }, [load])
 
-  async function reserve(values) {
+  async function reserve() {
     setError('')
     setMessage('')
+    setSubmitting(true)
     try {
-      await http.post('/bookings', { clientId: Number(values.clientId), fitnessClassId: Number(id) })
+      await http.post('/bookings', { clientId: currentClient.id, fitnessClassId: Number(id) })
       setMessage('Rezervarea a fost confirmata.')
       await load()
     } catch (exception) {
       setError(errorMessage(exception))
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -38,7 +45,7 @@ export function ClassDetailsPage() {
     <>
       <div className="mb-3">
         <h1 className="page-title">{fitnessClass.name}</h1>
-        <div className="muted">{fitnessClass.classType?.name} · {fitnessClass.status}</div>
+        <div className="muted">{fitnessClass.classType?.name} - {fitnessClass.status}</div>
       </div>
       {message && <div className="alert alert-success">{message}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
@@ -60,15 +67,18 @@ export function ClassDetailsPage() {
           </section>
         </div>
         <div className="col-12 col-lg-5">
-          <form className="panel" onSubmit={handleSubmit(reserve)}>
+          <section className="panel">
             <h2 className="h5 fw-bold">Rezervare</h2>
-            <label className="form-label">ID client</label>
-            <input className="form-control" type="number" {...register('clientId', { required: 'Client obligatoriu.' })} />
-            <div className="text-danger small">{formState.errors.clientId?.message}</div>
-            <button className="btn btn-brand mt-3" type="submit" disabled={formState.isSubmitting}>
+            <div className="mb-3">
+              <div className="form-label">Client</div>
+              <div className="form-control bg-light">
+                {currentClient ? `${currentClient.firstName} ${currentClient.lastName}` : 'Se incarca...'}
+              </div>
+            </div>
+            <button className="btn btn-brand mt-3" type="button" onClick={reserve} disabled={submitting || !currentClient}>
               <CalendarCheck size={16} /> Rezerva loc
             </button>
-          </form>
+          </section>
         </div>
       </div>
     </>

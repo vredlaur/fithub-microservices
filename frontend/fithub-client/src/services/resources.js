@@ -11,7 +11,7 @@ export const adminResources = {
       { name: 'lastName', label: 'Nume', required: true },
       { name: 'phone', label: 'Telefon' },
       { name: 'enabled', label: 'Activ', type: 'checkbox' },
-      { name: 'roles', label: 'Roluri', placeholder: 'ADMIN,USER' },
+      { name: 'roles', label: 'Roluri', type: 'relationMulti', source: '/roles', optionLabel: 'name', valueKey: 'name' },
     ],
   },
   locations: {
@@ -30,7 +30,7 @@ export const adminResources = {
     endpoint: '/rooms',
     sortOptions: ['name', 'capacity'],
     fields: [
-      { name: 'location', label: 'ID locatie', type: 'relation', required: true },
+      { name: 'location', label: 'Locatie', type: 'relation', source: '/locations', optionLabel: ['name', 'city'], required: true },
       { name: 'name', label: 'Nume', required: true },
       { name: 'capacity', label: 'Capacitate', type: 'number', required: true },
       { name: 'active', label: 'Activa', type: 'checkbox' },
@@ -63,9 +63,9 @@ export const adminResources = {
     endpoint: '/classes',
     sortOptions: ['startTime', 'name'],
     fields: [
-      { name: 'classType', label: 'ID tip clasa', type: 'relation', required: true },
-      { name: 'trainer', label: 'ID antrenor', type: 'relation', required: true },
-      { name: 'trainingRoom', label: 'ID sala', type: 'relation', required: true },
+      { name: 'classType', label: 'Tip clasa', type: 'relation', source: '/class-types', optionLabel: ['name', 'difficultyLevel'], required: true },
+      { name: 'trainer', label: 'Antrenor', type: 'relation', source: '/trainers', optionLabel: ['firstName', 'lastName'], required: true },
+      { name: 'trainingRoom', label: 'Sala', type: 'relation', source: '/rooms', optionLabel: ['name', 'capacity'], required: true },
       { name: 'name', label: 'Nume', required: true },
       { name: 'startTime', label: 'Start', type: 'datetime-local', required: true },
       { name: 'endTime', label: 'Final', type: 'datetime-local', required: true },
@@ -96,6 +96,31 @@ export const adminResources = {
       { name: 'lastName', label: 'Nume', required: true },
       { name: 'email', label: 'Email', type: 'email', required: true },
       { name: 'phone', label: 'Telefon' },
+    ],
+  },
+  subscriptions: {
+    title: 'Abonamente clienti',
+    endpoint: '/subscriptions',
+    sortOptions: ['startDate', 'status'],
+    fields: [
+      { name: 'client', label: 'Client', type: 'relation', source: '/clients', optionLabel: ['firstName', 'lastName', 'email'], required: true },
+      { name: 'subscriptionType', label: 'Tip abonament', type: 'relation', source: '/subscription-types', optionLabel: ['name', 'price'], required: true },
+      { name: 'startDate', label: 'Data start', type: 'date', required: true },
+      { name: 'endDate', label: 'Data final', type: 'date', required: true },
+      { name: 'status', label: 'Status', placeholder: 'ACTIVE' },
+    ],
+  },
+  payments: {
+    title: 'Plati',
+    endpoint: '/payments',
+    sortOptions: ['paymentDate', 'status'],
+    fields: [
+      { name: 'client', label: 'Client', type: 'relation', source: '/clients', optionLabel: ['firstName', 'lastName', 'email'], required: true },
+      { name: 'clientSubscription', label: 'Abonament', type: 'relation', source: '/subscriptions', optionLabel: ['id', 'status', 'endDate'] },
+      { name: 'amount', label: 'Suma', type: 'number', required: true },
+      { name: 'paymentDate', label: 'Data plata', type: 'datetime-local' },
+      { name: 'status', label: 'Status', placeholder: 'PAID' },
+      { name: 'method', label: 'Metoda', placeholder: 'CARD' },
     ],
   },
 }
