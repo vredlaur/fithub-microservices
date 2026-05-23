@@ -1,9 +1,7 @@
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
-COPY mvnw ./
-COPY .mvn .mvn
 COPY backend/discovery-server backend/discovery-server
-RUN chmod +x mvnw && ./mvnw -q -f backend/discovery-server/pom.xml -DskipTests package
+RUN mvn -q -f backend/discovery-server/pom.xml -DskipTests package
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
