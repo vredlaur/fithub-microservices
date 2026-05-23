@@ -60,6 +60,40 @@ class BookingServiceTest {
     }
 
     @Test
+    void createForAuthUserUsesLinkedClient() {
+        Client client = new Client();
+        client.setId(1L);
+        client.setAuthUserId(42L);
+        when(clientRepository.findByAuthUserId(42L)).thenReturn(Optional.of(client));
+        when(subscriptionRepository.findFirstByClientIdAndStatusAndEndDateAfter(1L, "ACTIVE", LocalDate.now()))
+            .thenReturn(Optional.of(new ClientSubscription()));
+        when(gymClient.availability(2L)).thenReturn(Map.of("available", true));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Booking booking = service.createForAuthUser(42L, 2L);
+
+        assertThat(booking.getClient().getAuthUserId()).isEqualTo(42L);
+        verify(gymClient).reserveSlot(2L);
+    }
+
+    @Test
+    void deleteForAuthUserRejectsForeignBooking() {
+        Client currentClient = new Client();
+        currentClient.setId(1L);
+        Client otherClient = new Client();
+        otherClient.setId(2L);
+        Booking booking = new Booking();
+        booking.setId(10L);
+        booking.setClient(otherClient);
+        booking.setFitnessClassId(2L);
+        when(clientRepository.findByAuthUserId(42L)).thenReturn(Optional.of(currentClient));
+        when(bookingRepository.findById(10L)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.deleteForAuthUser(42L, 10L))
+            .isInstanceOf(InvalidOperationException.class);
+    }
+
+    @Test
     void createRejectsMissingClient() {
         when(clientRepository.findById(99L)).thenReturn(Optional.empty());
 

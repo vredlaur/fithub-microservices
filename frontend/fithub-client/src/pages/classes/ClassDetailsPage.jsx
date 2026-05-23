@@ -1,6 +1,6 @@
 import { CalendarCheck } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { errorMessage, http } from '../../api/http.js'
 
 export function ClassDetailsPage() {
@@ -12,12 +12,14 @@ export function ClassDetailsPage() {
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    const [classResponse, clientResponse] = await Promise.all([
-      http.get(`/classes/${id}`),
-      http.get('/clients/me'),
-    ])
+    const classResponse = await http.get(`/classes/${id}`)
     setFitnessClass(classResponse.data)
-    setCurrentClient(clientResponse.data)
+    try {
+      const clientResponse = await http.get('/clients/me')
+      setCurrentClient(clientResponse.data)
+    } catch {
+      setCurrentClient(null)
+    }
   }, [id])
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export function ClassDetailsPage() {
     setMessage('')
     setSubmitting(true)
     try {
-      await http.post('/bookings', { clientId: currentClient.id, fitnessClassId: Number(id) })
+      await http.post('/bookings/me', { fitnessClassId: Number(id) })
       setMessage('Rezervarea a fost confirmata.')
       await load()
     } catch (exception) {
@@ -48,7 +50,16 @@ export function ClassDetailsPage() {
         <div className="muted">{fitnessClass.classType?.name} - {fitnessClass.status}</div>
       </div>
       {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="alert alert-danger">
+          {error}
+          {error.toLowerCase().includes('abonament') && (
+            <div className="mt-2">
+              <Link className="btn btn-outline-danger btn-sm" to="/subscriptions">Alege abonament</Link>
+            </div>
+          )}
+        </div>
+      )}
       <div className="row g-3">
         <div className="col-12 col-lg-7">
           <section className="panel">
@@ -72,12 +83,17 @@ export function ClassDetailsPage() {
             <div className="mb-3">
               <div className="form-label">Client</div>
               <div className="form-control bg-light">
-                {currentClient ? `${currentClient.firstName} ${currentClient.lastName}` : 'Se incarca...'}
+                {currentClient ? `${currentClient.firstName} ${currentClient.lastName}` : 'Profilul de client nu este incarcat'}
               </div>
             </div>
             <button className="btn btn-brand mt-3" type="button" onClick={reserve} disabled={submitting || !currentClient}>
               <CalendarCheck size={16} /> Rezerva loc
             </button>
+            {!currentClient && (
+              <div className="mt-3">
+                <Link className="btn btn-outline-secondary btn-sm" to="/subscriptions">Mergi la abonamente</Link>
+              </div>
+            )}
           </section>
         </div>
       </div>

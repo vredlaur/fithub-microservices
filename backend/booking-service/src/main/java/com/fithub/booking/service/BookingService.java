@@ -48,6 +48,11 @@ public class BookingService {
         return bookingRepository.findAll(pageable);
     }
 
+    public Page<Booking> findByAuthUserId(Long authUserId, Pageable pageable) {
+        Client client = findClientByAuthUserId(authUserId);
+        return bookingRepository.findByClientId(client.getId(), pageable);
+    }
+
     public Booking findById(Long id) {
         return bookingRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Rezervarea nu a fost gasita."));
@@ -57,21 +62,30 @@ public class BookingService {
     public Booking create(BookingRequest request) {
         Client client = clientRepository.findById(request.clientId())
             .orElseThrow(() -> new ResourceNotFoundException("Clientul nu a fost gasit."));
+        return createForClient(client, request.fitnessClassId());
+    }
 
+    @Transactional
+    public Booking createForAuthUser(Long authUserId, Long fitnessClassId) {
+        Client client = findClientByAuthUserId(authUserId);
+        return createForClient(client, fitnessClassId);
+    }
+
+    private Booking createForClient(Client client, Long fitnessClassId) {
         subscriptionRepository.findFirstByClientIdAndStatusAndEndDateAfter(client.getId(), "ACTIVE", LocalDate.now())
             .orElseThrow(() -> new InvalidOperationException("Clientul nu are abonament activ."));
 
-        Map<String, Object> availability = gymClient.availability(request.fitnessClassId());
+        Map<String, Object> availability = gymClient.availability(fitnessClassId);
         if (!Boolean.TRUE.equals(availability.get("available"))) {
-            log.info("Booking failed for client {} and class {}: no availability", client.getId(), request.fitnessClassId());
+            log.info("Booking failed for client {} and class {}: no availability", client.getId(), fitnessClassId);
             throw new InvalidOperationException("Nu mai sunt locuri disponibile pentru clasa aleasa.");
         }
 
-        gymClient.reserveSlot(request.fitnessClassId());
+        gymClient.reserveSlot(fitnessClassId);
 
         Booking booking = new Booking();
         booking.setClient(client);
-        booking.setFitnessClassId(request.fitnessClassId());
+        booking.setFitnessClassId(fitnessClassId);
         booking.setBookingDate(LocalDateTime.now());
         booking.setStatus("CONFIRMED");
         Booking saved = bookingRepository.save(booking);
@@ -79,7 +93,7 @@ public class BookingService {
         Notification notification = new Notification();
         notification.setClient(client);
         notification.setTitle("Rezervare confirmata");
-        notification.setMessage("Rezervarea pentru clasa #" + request.fitnessClassId() + " a fost confirmata.");
+        notification.setMessage("Rezervarea pentru clasa #" + fitnessClassId + " a fost confirmata.");
         notificationRepository.save(notification);
 
         log.info("Created booking {} for client {}", saved.getId(), client.getId());
@@ -92,5 +106,22 @@ public class BookingService {
         gymClient.releaseSlot(booking.getFitnessClassId());
         bookingRepository.delete(booking);
         log.info("Deleted booking {}", id);
+    }
+
+    @Transactional
+    public void deleteForAuthUser(Long authUserId, Long id) {
+        Client client = findClientByAuthUserId(authUserId);
+        Booking booking = findById(id);
+        if (!client.getId().equals(booking.getClient().getId())) {
+            throw new InvalidOperationException("Rezervarea nu apartine contului curent.");
+        }
+        gymClient.releaseSlot(booking.getFitnessClassId());
+        bookingRepository.delete(booking);
+        log.info("Deleted booking {} for client {}", id, client.getId());
+    }
+
+    private Client findClientByAuthUserId(Long authUserId) {
+        return clientRepository.findByAuthUserId(authUserId)
+            .orElseThrow(() -> new ResourceNotFoundException("Clientul asociat contului curent nu exista. Completeaza profilul de client inainte de abonament sau rezervare."));
     }
 }

@@ -1,8 +1,10 @@
 package com.fithub.booking.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.fithub.booking.dto.ClientProfileRequest;
 import com.fithub.booking.entity.Client;
 import com.fithub.booking.repository.ClientRepository;
 import java.util.Optional;
@@ -26,5 +28,24 @@ class ClientServiceTest {
         ClientService service = new ClientService(repository);
 
         assertThat(service.findByAuthUserId(42L).getId()).isEqualTo(5L);
+    }
+
+    @Test
+    void upsertCurrentClientCreatesMissingClient() {
+        when(repository.findByAuthUserId(42L)).thenReturn(Optional.empty());
+        when(repository.save(any(Client.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ClientService service = new ClientService(repository);
+
+        Client client = service.upsertCurrentClient(42L, new ClientProfileRequest(
+            "Laurentiu",
+            "Vrednicu",
+            "laur@example.com",
+            "0700000000"
+        ));
+
+        assertThat(client.getAuthUserId()).isEqualTo(42L);
+        assertThat(client.getFirstName()).isEqualTo("Laurentiu");
+        assertThat(client.getLastName()).isEqualTo("Vrednicu");
     }
 }

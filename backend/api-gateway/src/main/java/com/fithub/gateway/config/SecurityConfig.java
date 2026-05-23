@@ -29,9 +29,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/classes/**").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/api/clients/me").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/subscription-types/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/clients/me", "/api/subscriptions/me", "/api/subscriptions/me/**",
+                    "/api/bookings/me", "/api/bookings/me/**", "/api/payments/me", "/api/payments/me/**",
+                    "/api/notifications/me", "/api/notifications/me/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers("/api/users/**", "/api/roles/**", "/api/locations/**", "/api/rooms/**", "/api/trainers/**",
-                    "/api/class-types/**", "/api/equipment/**", "/api/clients/**", "/api/subscription-types/**").hasRole("ADMIN")
+                    "/api/class-types/**", "/api/equipment/**", "/api/clients/**", "/api/subscription-types/**",
+                    "/api/subscriptions/**", "/api/bookings/**", "/api/payments/**", "/api/notifications/**").hasRole("ADMIN")
                 .requestMatchers("/api/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
             )

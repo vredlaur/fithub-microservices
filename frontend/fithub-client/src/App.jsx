@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { Dumbbell, LayoutDashboard } from 'lucide-react'
+import { LayoutDashboard } from 'lucide-react'
 import { useAuth } from './hooks/useAuth.js'
 import { AppLayout } from './layouts/AppLayout.jsx'
 import { LoginPage } from './pages/auth/LoginPage.jsx'
@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/dashboard/DashboardPage.jsx'
 import { ClassesPage } from './pages/classes/ClassesPage.jsx'
 import { ClassDetailsPage } from './pages/classes/ClassDetailsPage.jsx'
 import { BookingsPage } from './pages/bookings/BookingsPage.jsx'
+import { SubscriptionsPage } from './pages/subscriptions/SubscriptionsPage.jsx'
 import { SimplePage } from './pages/common/SimplePage.jsx'
 import { NotFoundPage } from './pages/common/NotFoundPage.jsx'
 import { GenericCrudPage } from './pages/admin/GenericCrudPage.jsx'
@@ -53,8 +54,8 @@ export default function App() {
         <Route path="classes" element={<ClassesPage />} />
         <Route path="classes/:id" element={<ClassDetailsPage />} />
         <Route path="bookings" element={<BookingsPage />} />
-        <Route path="subscriptions" element={<SimplePage title="Abonamente" endpoint="/subscriptions" icon={Dumbbell} />} />
-        <Route path="notifications" element={<SimplePage title="Notificari" endpoint="/notifications" markRead icon={LayoutDashboard} />} />
+        <Route path="subscriptions" element={<SubscriptionsPage />} />
+        <Route path="notifications" element={<SimplePage title="Notificari" endpoint="/notifications/me" markRead icon={LayoutDashboard} />} />
         {Object.keys(adminResources).map((key) => (
           <Route key={key} path={`admin/${key}`} element={<AdminPage resourceKey={key} />} />
         ))}

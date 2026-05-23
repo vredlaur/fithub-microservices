@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.fithub.booking.entity.Payment;
+import com.fithub.booking.repository.ClientRepository;
 import com.fithub.booking.repository.PaymentRepository;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PaymentServiceTest {
     @Mock
     PaymentRepository repository;
+    @Mock
+    ClientRepository clientRepository;
 
     @Test
     void createStoresPayment() {
@@ -23,7 +26,7 @@ class PaymentServiceTest {
         payment.setAmount(BigDecimal.valueOf(149.99));
         when(repository.save(payment)).thenReturn(payment);
 
-        PaymentService service = new PaymentService(repository);
+        PaymentService service = new PaymentService(repository, clientRepository);
 
         Payment saved = service.create(payment);
         assertThat(saved.getId()).isNull();

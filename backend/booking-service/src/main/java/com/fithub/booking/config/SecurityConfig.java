@@ -3,6 +3,7 @@ package com.fithub.booking.config;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -21,8 +22,12 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/api/clients/me").hasAnyRole("USER", "ADMIN")
-                .requestMatchers("/api/clients/**", "/api/subscription-types/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/subscription-types/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/clients/me", "/api/subscriptions/me", "/api/subscriptions/me/**",
+                    "/api/bookings/me", "/api/bookings/me/**", "/api/payments/me", "/api/payments/me/**",
+                    "/api/notifications/me", "/api/notifications/me/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers("/api/clients/**", "/api/subscription-types/**", "/api/subscriptions/**",
+                    "/api/bookings/**", "/api/payments/**", "/api/notifications/**").hasRole("ADMIN")
                 .requestMatchers("/api/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()
             )

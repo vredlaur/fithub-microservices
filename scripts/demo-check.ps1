@@ -173,7 +173,7 @@ Write-Ok "Found class #$($class.id) '$($class.name)' with $($availability.availa
 
 Write-Step "Checking booking flow through API Gateway"
 $bookings = Invoke-WithRetry -Description "Reading existing bookings through API Gateway" -Action {
-    Invoke-FitHubJson -Uri "$GatewayUrl/api/bookings?page=0&size=100&sort=id,desc" -Headers $userHeaders
+    Invoke-FitHubJson -Uri "$GatewayUrl/api/bookings/me?page=0&size=100&sort=id,desc" -Headers $userHeaders
 }
 $existingBooking = @($bookings.content | Where-Object {
     $_.client.id -eq $client.id -and $_.fitnessClassId -eq $class.id -and $_.status -eq "CONFIRMED"
@@ -183,8 +183,7 @@ if ($null -ne $existingBooking) {
     Write-Ok "Confirmed demo booking #$($existingBooking.id) already exists for class #$($class.id)"
 } elseif ($availability.available -eq $true) {
     $booking = Invoke-WithRetry -Description "Creating booking through API Gateway" -Action {
-        Invoke-FitHubJson -Method "POST" -Uri "$GatewayUrl/api/bookings" -Headers $userHeaders -Body @{
-            clientId = $client.id
+        Invoke-FitHubJson -Method "POST" -Uri "$GatewayUrl/api/bookings/me" -Headers $userHeaders -Body @{
             fitnessClassId = $class.id
         }
     }

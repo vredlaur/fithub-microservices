@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { errorMessage, http } from '../../api/http.js'
 
 function classLabel(item) {
@@ -23,7 +24,7 @@ export function BookingsPage() {
   const classById = useMemo(() => new Map(classes.map((item) => [item.id, item])), [classes])
 
   const loadBookings = useCallback(async () => {
-    const { data } = await http.get('/bookings', { params: { page, size: 8, sort } })
+    const { data } = await http.get('/bookings/me', { params: { page, size: 8, sort } })
     setItems(data.content || [])
     setTotalPages(data.totalPages || 1)
   }, [page, sort])
@@ -49,8 +50,7 @@ export function BookingsPage() {
     setMessage('')
     try {
       if (!currentClient) throw new Error('Clientul contului curent nu este incarcat.')
-      await http.post('/bookings', {
-        clientId: currentClient.id,
+      await http.post('/bookings/me', {
         fitnessClassId: Number(values.fitnessClassId),
       })
       reset({ fitnessClassId: values.fitnessClassId })
@@ -64,7 +64,7 @@ export function BookingsPage() {
   async function remove(item) {
     if (!window.confirm(`Anulezi rezervarea #${item.id}?`)) return
     try {
-      await http.delete(`/bookings/${item.id}`)
+      await http.delete(`/bookings/me/${item.id}`)
       await Promise.all([loadBookings(), loadContext()])
     } catch (exception) {
       setError(errorMessage(exception))
@@ -75,10 +75,19 @@ export function BookingsPage() {
     <>
       <div className="mb-3">
         <h1 className="page-title">Rezervari</h1>
-        <div className="muted">Rezervarea foloseste automat clientul asociat contului autentificat.</div>
+        <div className="muted">Rezervarile sunt legate automat de contul autentificat.</div>
       </div>
       {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="alert alert-danger">
+          {error}
+          {error.toLowerCase().includes('abonament') && (
+            <div className="mt-2">
+              <Link className="btn btn-outline-danger btn-sm" to="/subscriptions">Alege abonament</Link>
+            </div>
+          )}
+        </div>
+      )}
       <div className="crud-grid">
         <section className="panel">
           <div className="d-flex justify-content-between mb-2">

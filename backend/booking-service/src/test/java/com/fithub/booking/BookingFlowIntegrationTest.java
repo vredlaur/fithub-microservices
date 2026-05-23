@@ -3,7 +3,6 @@ package com.fithub.booking;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,8 +17,13 @@ import com.fithub.booking.repository.ClientSubscriptionRepository;
 import com.fithub.booking.repository.NotificationRepository;
 import com.fithub.booking.repository.SubscriptionTypeRepository;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -61,15 +65,14 @@ class BookingFlowIntegrationTest {
         subscriptionRepository.save(subscription);
         when(gymClient.availability(77L)).thenReturn(Map.of("available", true));
 
-        mockMvc.perform(post("/api/bookings")
-                .with(user("user").roles("USER"))
+        mockMvc.perform(post("/api/bookings/me")
+                .header("Authorization", "Bearer " + tokenFor(client.getAuthUserId()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
-                      "clientId": %d,
                       "fitnessClassId": 77
                     }
-                    """.formatted(client.getId())))
+                    """))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.fitnessClassId").value(77))
             .andExpect(jsonPath("$.status").value("CONFIRMED"));
@@ -97,5 +100,24 @@ class BookingFlowIntegrationTest {
         type.setPrice(BigDecimal.valueOf(100));
         type.setActive(true);
         return type;
+    }
+
+    private String tokenFor(Long userId) throws Exception {
+        String header = encode("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
+        String payload = encode("""
+            {"sub":"user","userId":%d,"roles":["USER"],"exp":%d}
+            """.formatted(userId, Instant.now().plusSeconds(3600).getEpochSecond()));
+        String unsigned = header + "." + payload;
+        return unsigned + "." + sign(unsigned);
+    }
+
+    private String encode(String value) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String sign(String value) throws Exception {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec("fithub-local-secret-key-change-me".getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal(value.getBytes(StandardCharsets.UTF_8)));
     }
 }

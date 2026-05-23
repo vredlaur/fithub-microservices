@@ -30,6 +30,11 @@ function display(value, field) {
   return optionText(value, field)
 }
 
+function getByPath(value, path) {
+  if (!path) return undefined
+  return path.split('.').reduce((current, key) => current?.[key], value)
+}
+
 function initialValues(fields) {
   return Object.fromEntries(fields.map((field) => {
     if (field.type === 'checkbox') return [field.name, true]
@@ -40,6 +45,7 @@ function initialValues(fields) {
 
 function relationValue(value, field) {
   if (!value) return ''
+  if (typeof value !== 'object') return value
   const key = field.valueKey || 'id'
   return value[key] ?? ''
 }
@@ -47,7 +53,7 @@ function relationValue(value, field) {
 function flatten(entity, fields) {
   const values = {}
   for (const field of fields) {
-    const value = entity[field.name]
+    const value = getByPath(entity, field.path || field.name)
     if (field.type === 'relation') values[field.name] = relationValue(value, field)
     else if (field.type === 'relationMulti') values[field.name] = Array.isArray(value) ? value.map((item) => relationValue(item, field)) : []
     else if (field.type === 'datetime-local') values[field.name] = value ? value.slice(0, 16) : ''
@@ -60,6 +66,9 @@ function payload(values, fields) {
   const result = {}
   for (const field of fields) {
     const value = values[field.name]
+    if (field.omitWhenEmpty && (value === '' || value === null || value === undefined)) {
+      continue
+    }
     if (field.type === 'relation') {
       result[field.name] = value ? { id: Number(value) } : null
     } else if (field.type === 'relationMulti') {
@@ -69,8 +78,10 @@ function payload(values, fields) {
       result[field.name] = value === '' ? null : Number(value)
     } else if (field.type === 'checkbox') {
       result[field.name] = Boolean(value)
+    } else if ((field.type === 'date' || field.type === 'datetime-local') && value === '') {
+      result[field.name] = null
     } else {
-      result[field.name] = value
+      result[field.name] = typeof value === 'string' ? value.trim() : value
     }
   }
   return result
@@ -152,7 +163,10 @@ export function GenericCrudPage({ config }) {
   const { register, handleSubmit, reset, formState, getValues } = useForm({ defaultValues: initialValues(config.fields) })
 
   const relationFields = useMemo(() => config.fields.filter((field) => field.source), [config.fields])
-  const columns = useMemo(() => ['id', ...config.fields.slice(0, 5).map((field) => field.name)], [config.fields])
+  const columns = useMemo(() => [
+    { name: 'id', label: 'ID', path: 'id' },
+    ...config.fields.filter((field) => field.showInTable !== false).slice(0, 5),
+  ], [config.fields])
 
   const loadRelations = useCallback(async () => {
     const entries = await Promise.all(relationFields.map(async (field) => {
@@ -164,6 +178,10 @@ export function GenericCrudPage({ config }) {
 
   const load = useCallback(async () => {
     setError('')
+    if (!config.sortOptions.includes(sort.split(',')[0])) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const { data } = await http.get(config.endpoint, { params: { page, size: 8, sort } })
@@ -174,9 +192,12 @@ export function GenericCrudPage({ config }) {
     } finally {
       setLoading(false)
     }
-  }, [config.endpoint, page, sort])
+  }, [config.endpoint, config.sortOptions, page, sort])
 
   useEffect(() => {
+    setItems([])
+    setTotalPages(1)
+    setSort(`${config.sortOptions[0]},asc`)
     reset(initialValues(config.fields))
     setEditing(null)
     setPage(0)
@@ -306,7 +327,7 @@ export function GenericCrudPage({ config }) {
             <table className="table table-sm align-middle">
               <thead>
                 <tr>
-                  {columns.map((column) => <th key={column}>{column}</th>)}
+                  {columns.map((column) => <th key={column.name}>{column.label || column.name}</th>)}
                   <th></th>
                 </tr>
               </thead>
@@ -320,8 +341,8 @@ export function GenericCrudPage({ config }) {
                 {!loading && items.map((item) => (
                   <tr key={item.id}>
                     {columns.map((column) => {
-                      const field = config.fields.find((candidate) => candidate.name === column)
-                      return <td key={column}>{display(item[column], field)}</td>
+                      const field = config.fields.find((candidate) => candidate.name === column.name) || column
+                      return <td key={column.name}>{display(getByPath(item, field.path || field.name), field)}</td>
                     })}
                     <td className="text-end">
                       <button className="btn btn-outline-secondary btn-sm me-1" onClick={() => onEdit(item)} title="Editare">

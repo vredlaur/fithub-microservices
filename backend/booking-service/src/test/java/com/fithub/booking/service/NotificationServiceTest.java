@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.fithub.booking.entity.Notification;
+import com.fithub.booking.repository.ClientRepository;
 import com.fithub.booking.repository.NotificationRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class NotificationServiceTest {
     @Mock
     NotificationRepository repository;
+    @Mock
+    ClientRepository clientRepository;
 
     @Test
     void markReadSetsReadFlag() {
@@ -25,7 +28,7 @@ class NotificationServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(notification));
         when(repository.save(notification)).thenReturn(notification);
 
-        NotificationService service = new NotificationService(repository);
+        NotificationService service = new NotificationService(repository, clientRepository);
 
         assertThat(service.markRead(1L).isRead()).isTrue();
     }

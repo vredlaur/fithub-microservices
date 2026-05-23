@@ -24,6 +24,12 @@ export function AuthProvider({ children }) {
     localStorage.setItem('fithub.token', data.token)
     localStorage.setItem('fithub.user', JSON.stringify(data))
     setUser(data)
+    await http.post('/clients/me', {
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email,
+      phone: payload.phone || '',
+    })
     return data
   }
 

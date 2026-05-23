@@ -11,8 +11,8 @@ const schema = z.object({
   username: z.string().min(1, 'Username-ul este obligatoriu.'),
   email: z.string().email('Email invalid.'),
   password: z.string().min(8, 'Parola trebuie sa aiba minimum 8 caractere.'),
-  firstName: z.string().min(1, 'Prenumele este obligatoriu.'),
   lastName: z.string().min(1, 'Numele este obligatoriu.'),
+  firstName: z.string().min(1, 'Prenumele este obligatoriu.'),
   phone: z.string().optional(),
 })
 
@@ -28,7 +28,7 @@ export function RegisterPage() {
     setError('')
     try {
       await registerUser(values)
-      navigate('/dashboard')
+      navigate('/subscriptions')
     } catch (exception) {
       setError(errorMessage(exception))
     }
@@ -48,8 +48,8 @@ export function RegisterPage() {
             ['username', 'Username'],
             ['email', 'Email'],
             ['password', 'Parola', 'password'],
-            ['firstName', 'Prenume'],
             ['lastName', 'Nume'],
+            ['firstName', 'Prenume'],
             ['phone', 'Telefon'],
           ].map(([name, label, type]) => (
             <div className="col-12 col-md-6" key={name}>
