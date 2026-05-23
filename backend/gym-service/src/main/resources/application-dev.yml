@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${GYM_DB_URL:jdbc:postgresql://localhost:5432/fithub_gym_db}
+    username: ${GYM_DB_USERNAME:fithub}
+    password: ${GYM_DB_PASSWORD:fithub}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true

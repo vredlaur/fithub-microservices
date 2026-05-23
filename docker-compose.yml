@@ -1,0 +1,117 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fithub-postgres
+    environment:
+      POSTGRES_USER: fithub
+      POSTGRES_PASSWORD: fithub
+      POSTGRES_DB: fithub_auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fithub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: backend/discovery-server/Dockerfile
+    container_name: fithub-discovery-server
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: backend/api-gateway/Dockerfile
+    container_name: fithub-api-gateway
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      JWT_SECRET: fithub-local-secret-key-change-me
+    ports:
+      - "8080:8080"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: backend/auth-service/Dockerfile
+    container_name: fithub-auth-service
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      JWT_SECRET: fithub-local-secret-key-change-me
+      AUTH_DB_URL: jdbc:postgresql://postgres:5432/fithub_auth_db
+      AUTH_DB_USERNAME: fithub
+      AUTH_DB_PASSWORD: fithub
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+
+  gym-service:
+    build:
+      context: .
+      dockerfile: backend/gym-service/Dockerfile
+    container_name: fithub-gym-service
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      JWT_SECRET: fithub-local-secret-key-change-me
+      GYM_DB_URL: jdbc:postgresql://postgres:5432/fithub_gym_db
+      GYM_DB_USERNAME: fithub
+      GYM_DB_PASSWORD: fithub
+    ports:
+      - "8082:8082"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+
+  booking-service:
+    build:
+      context: .
+      dockerfile: backend/booking-service/Dockerfile
+    container_name: fithub-booking-service
+    environment:
+      EUREKA_URL: http://discovery-server:8761/eureka/
+      JWT_SECRET: fithub-local-secret-key-change-me
+      BOOKING_DB_URL: jdbc:postgresql://postgres:5432/fithub_booking_db
+      BOOKING_DB_USERNAME: fithub
+      BOOKING_DB_PASSWORD: fithub
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      gym-service:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/fithub-client/Dockerfile
+    container_name: fithub-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres_data:

@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/auth/**,/api/users/**,/api/roles/**
+              filters:
+                - AddRequestHeader=X-Gateway-Request,FitHub
+                - AddResponseHeader=X-Gateway-Response,FitHub
+            - id: gym-service
+              uri: lb://gym-service
+              predicates:
+                - Path=/api/locations/**,/api/rooms/**,/api/trainers/**,/api/class-types/**,/api/classes/**,/api/equipment/**
+              filters:
+                - AddRequestHeader=X-Gateway-Request,FitHub
+                - AddResponseHeader=X-Gateway-Response,FitHub
+            - id: booking-service
+              uri: lb://booking-service
+              predicates:
+                - Path=/api/clients/**,/api/subscription-types/**,/api/subscriptions/**,/api/bookings/**,/api/payments/**,/api/notifications/**
+              filters:
+                - AddRequestHeader=X-Gateway-Request,FitHub
+                - AddResponseHeader=X-Gateway-Response,FitHub
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:fithub-local-secret-key-change-me}
+  rate-limit:
+    requests-per-minute: ${RATE_LIMIT_PER_MINUTE:120}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

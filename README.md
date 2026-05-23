@@ -1,131 +1,103 @@
-# fithub-microservices
-# FitHub - Aplicație Web cu Arhitectură de Microservicii
+# FitHub Microservices
 
-## Descriere proiect
+FitHub este o aplicatie web pentru administrarea unei sali fitness: utilizatori, roluri, locatii, sali, antrenori, clase, abonamente, rezervari, plati si notificari. Proiectul este construit ca arhitectura de microservicii cu React, Spring Boot, Eureka, API Gateway si PostgreSQL.
 
-FitHub este o platformă web pentru administrarea unei săli de fitness. Aplicația permite gestionarea utilizatorilor, rolurilor, clienților, antrenorilor, locațiilor, sălilor de antrenament, claselor fitness, abonamentelor, rezervărilor și notificărilor.
+## Arhitectura
 
-Proiectul este dezvoltat pentru disciplina Aplicații Web cu Arhitectură de Microservicii.
+```text
+React Vite
+  -> API Gateway :8080
+    -> auth-service :8081
+    -> gym-service :8082
+    -> booking-service :8083
+  -> discovery-server / Eureka :8761
+PostgreSQL :5432
+```
 
-## Tema aleasă
+Microservicii business:
+- `auth-service`: autentificare, JWT, roluri, utilizatori.
+- `gym-service`: locatii, sali, antrenori, tipuri de clase, clase fitness, echipamente.
+- `booking-service`: clienti, abonamente, rezervari, plati, notificari.
 
-Platformă web cu microservicii pentru administrarea unei săli de fitness.
+Componente tehnice:
+- `api-gateway`: routing centralizat, JWT filter, rate limiting simplu.
+- `discovery-server`: Eureka service registry.
+- `frontend/fithub-client`: React + Vite.
 
-## Tehnologii propuse
+## Rulare Locala
 
-### Backend
+Prerequisites:
+- Java 21
+- Node.js + NPM
+- Docker Desktop pentru rularea completa cu Compose
 
-- Java
-- Spring Boot
-- Spring Data JPA
-- Spring Security
-- Spring Validation
-- Spring Cloud
-- JUnit 5
-- Mockito
-- SLF4J + Logback
+Backend tests:
 
-### Frontend
+```powershell
+.\mvnw.cmd test
+```
 
-- React
-- React Router
-- Axios
-- React Hook Form
+Frontend:
 
-### Bază de date
+```powershell
+cd frontend\fithub-client
+npm install
+npm run dev
+```
 
-- PostgreSQL pentru mediul de dezvoltare
-- H2 in-memory pentru mediul de testare
+Docker Compose:
 
-### Microservicii și infrastructură
+```powershell
+docker compose up --build
+```
 
-- Spring Cloud Config
-- Eureka Discovery Server
-- Spring Cloud Gateway
-- Spring Boot Actuator
-- Resilience4j
-- Redis
-- Docker
-- Docker Compose
-- Prometheus
-- Grafana
+URL-uri:
+- Frontend: http://localhost:5173
+- API Gateway: http://localhost:8080
+- Eureka: http://localhost:8761
+- Auth Swagger: http://localhost:8081/swagger-ui.html
+- Gym Swagger: http://localhost:8082/swagger-ui.html
+- Booking Swagger: http://localhost:8083/swagger-ui.html
 
-## Funcționalități principale
+Conturi demo:
+- `admin` / `Admin123!`
+- `user` / `User123!`
 
-- Autentificare și autorizare pe roluri
-- Administrare utilizatori
-- Administrare roluri
-- Administrare clienți
-- Administrare antrenori
-- Administrare locații
-- Administrare săli de antrenament
-- Administrare clase fitness
-- Gestionare abonamente
-- Rezervări la clase
-- Notificări
-- Paginare și sortare
-- Validare server-side și client-side
-- Logging
-- Testare automată
-- Deployment cu Docker
+## Baze De Date
 
-## Roluri aplicație
+Un singur container PostgreSQL contine baze separate:
+- `fithub_auth_db`
+- `fithub_gym_db`
+- `fithub_booking_db`
 
-- ADMIN - gestionează întreaga aplicație
-- TRAINER - gestionează clasele proprii
-- USER - cumpără abonamente și face rezervări la clase
+Pentru teste, serviciile folosesc H2 in-memory prin profilul `test`.
 
-## Model de date propus
+## Flux Demo Principal
 
-Entități principale:
+1. Login cu `admin`.
+2. Admin verifica sau creeaza locatie, sala, antrenor, tip clasa si clasa fitness.
+3. Login cu `user`.
+4. User vede clasele disponibile.
+5. User face rezervare.
+6. `booking-service` verifica abonamentul activ si cere catre `gym-service` rezervarea unui slot.
+7. Se creeaza rezervarea si notificarea.
+8. In Eureka apar `AUTH-SERVICE`, `GYM-SERVICE`, `BOOKING-SERVICE`, `API-GATEWAY`.
 
-- Utilizator
-- Rol
-- ProfilClient
-- Antrenor
-- Locatie
-- SalaAntrenament
-- TipClasa
-- ClasaFitness
-- TipAbonament
-- AbonamentClient
-- RezervareClasa
-- Notificare
+## Documentatie
 
-## Relații propuse
+- [Arhitectura](docs/architecture.md)
+- [ER Diagram](docs/er-diagram.md)
+- [API Documentation](docs/api-documentation.md)
+- Screenshots: `docs/screenshots/`
 
-- One-to-One: Utilizator - ProfilClient
-- One-to-Many: Locatie - SalaAntrenament
-- One-to-Many: SalaAntrenament - ClasaFitness
-- One-to-Many: TipAbonament - AbonamentClient
-- Many-to-Many: Utilizator - Rol
-- Many-to-Many: Client - ClasaFitness prin RezervareClasa
+## Branch Strategy
 
-## Arhitectură propusă
+- `main`: versiuni stabile.
+- `dev`: integrare curenta.
+- feature branches pentru functionalitati mari.
 
-Aplicația va fi dezvoltată inițial ca aplicație modulară, apoi va fi separată în microservicii independente.
+## Limitari Cunoscute
 
-Microservicii propuse:
-
-- auth-service
-- gym-service
-- subscription-service
-- booking-service
-- notification-service
-- api-gateway
-- config-server
-- discovery-server
-
-## Branch strategy
-
-- main - versiunea stabilă
-- dev - dezvoltare activă
-- feature/* - funcționalități noi
-
-## Setup local
-
-Instrucțiunile de instalare și rulare vor fi completate după generarea structurii inițiale a proiectului.
-
-## Membrii echipei
-
-- Laurențiu Vrednicu
+- Deployment-ul este local prin Docker Compose, nu cloud public.
+- Config Server, Redis, Prometheus/Grafana si Resilience4j sunt lasate ca extensii.
+- JWT foloseste un secret local configurabil prin `JWT_SECRET`; pentru productie trebuie schimbat si externalizat.
