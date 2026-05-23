@@ -19,6 +19,19 @@ Authorization: Bearer <jwt>
 | GET/POST/PUT/DELETE | `/api/users/**` | ADMIN |
 | GET/POST/PUT/DELETE | `/api/roles/**` | ADMIN |
 
+`POST /api/auth/login` intoarce tokenul si informatii folosite de frontend:
+
+```json
+{
+  "token": "jwt",
+  "type": "Bearer",
+  "userId": 1,
+  "username": "user",
+  "email": "user@fithub.local",
+  "roles": ["USER"]
+}
+```
+
 ## Gym
 
 | Method | Path | Rol |
@@ -43,6 +56,7 @@ Authorization: Bearer <jwt>
 | GET/POST/PUT/DELETE | `/api/subscriptions` | USER, ADMIN |
 | GET/POST | `/api/payments` | USER, ADMIN |
 | GET/PUT | `/api/notifications` | USER, ADMIN |
+| GET | `/api/clients/me` | USER, ADMIN |
 | CRUD | `/api/clients` | ADMIN |
 | CRUD | `/api/subscription-types` | ADMIN |
 
@@ -58,6 +72,27 @@ GET /api/bookings?page=0&size=8&sort=bookingDate,desc
 
 ## Booking Flow Request
 
+Frontend-ul nu cere utilizatorului sa completeze `clientId`. La rezervare, aplicatia cere mai intai:
+
+```http
+GET /api/clients/me
+Authorization: Bearer <jwt>
+```
+
+Raspuns:
+
+```json
+{
+  "id": 1,
+  "authUserId": 2,
+  "firstName": "User",
+  "lastName": "FitHub",
+  "email": "user@fithub.local"
+}
+```
+
+Apoi trimite rezervarea catre `booking-service`:
+
 ```http
 POST /api/bookings
 Content-Type: application/json
@@ -67,6 +102,14 @@ Content-Type: application/json
   "fitnessClassId": 1
 }
 ```
+
+Flux intern:
+
+1. `booking-service` verifica daca exista clientul.
+2. `booking-service` cauta abonament activ pentru client.
+3. `booking-service` apeleaza `gym-service` prin OpenFeign pentru availability.
+4. `booking-service` apeleaza `reserve-slot`.
+5. `booking-service` salveaza booking-ul si creeaza notificare.
 
 Raspunsurile de eroare au forma:
 

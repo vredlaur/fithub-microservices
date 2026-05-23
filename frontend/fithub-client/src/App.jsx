@@ -9,6 +9,7 @@ import { ClassesPage } from './pages/classes/ClassesPage.jsx'
 import { ClassDetailsPage } from './pages/classes/ClassDetailsPage.jsx'
 import { BookingsPage } from './pages/bookings/BookingsPage.jsx'
 import { SimplePage } from './pages/common/SimplePage.jsx'
+import { NotFoundPage } from './pages/common/NotFoundPage.jsx'
 import { GenericCrudPage } from './pages/admin/GenericCrudPage.jsx'
 import { adminResources } from './services/resources.js'
 
@@ -57,6 +58,7 @@ export default function App() {
         {Object.keys(adminResources).map((key) => (
           <Route key={key} path={`admin/${key}`} element={<AdminPage resourceKey={key} />} />
         ))}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

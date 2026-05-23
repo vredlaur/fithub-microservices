@@ -45,9 +45,16 @@ React apeleaza API Gateway, nu microserviciile direct.
 
 Headerul `Authorization` este propagat catre `gym-service`, astfel incat securitatea distribuita ramane activa.
 
+Feign foloseste numele logic `gym-service`, iar instantele sunt rezolvate prin Eureka si Spring Cloud LoadBalancer. In demo, ruta de rezervare este proba principala ca exista comunicare reala intre microservicii.
+
 ## Observability
 
 Fiecare serviciu expune Actuator health:
 - `/actuator/health`
 
 Eureka arata instantele inregistrate si demonstreaza service discovery.
+
+Swagger/OpenAPI este activ pentru serviciile business:
+- `http://localhost:8081/swagger-ui.html`
+- `http://localhost:8082/swagger-ui.html`
+- `http://localhost:8083/swagger-ui.html`

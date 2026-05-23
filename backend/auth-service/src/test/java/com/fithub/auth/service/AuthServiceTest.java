@@ -1,9 +1,11 @@
 package com.fithub.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.fithub.auth.dto.LoginRequest;
 import com.fithub.auth.dto.RegisterRequest;
 import com.fithub.auth.entity.Role;
 import com.fithub.auth.entity.User;
@@ -57,6 +59,25 @@ class AuthServiceTest {
         ));
 
         assertThat(response.userId()).isEqualTo(10L);
+        assertThat(response.token()).isEqualTo("jwt");
+        assertThat(response.roles()).containsExactly("USER");
+    }
+
+    @Test
+    void loginAuthenticatesAndReturnsTokenWithUserId() {
+        Role role = new Role("USER");
+        User user = new User();
+        user.setId(11L);
+        user.setUsername("ana");
+        user.setEmail("ana@fithub.local");
+        user.setRoles(java.util.Set.of(role));
+        when(userRepository.findByUsername("ana")).thenReturn(Optional.of(user));
+        when(jwtService.generateToken(user)).thenReturn("jwt");
+
+        var response = authService.login(new LoginRequest("ana", "Password1"));
+
+        verify(authenticationManager).authenticate(any());
+        assertThat(response.userId()).isEqualTo(11L);
         assertThat(response.token()).isEqualTo("jwt");
         assertThat(response.roles()).containsExactly("USER");
     }

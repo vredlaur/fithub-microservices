@@ -37,11 +37,21 @@ Backend tests:
 .\mvnw.cmd test
 ```
 
+Rapoartele JaCoCo se genereaza in:
+
+- `backend/auth-service/target/site/jacoco/index.html`
+- `backend/gym-service/target/site/jacoco/index.html`
+- `backend/booking-service/target/site/jacoco/index.html`
+
+Build-ul verifica minimum 70% coverage pe clasele din pachetele `service`.
+
 Frontend:
 
 ```powershell
 cd frontend\fithub-client
-npm install
+npm ci
+npm run lint
+npm run build
 npm run dev
 ```
 
@@ -75,20 +85,41 @@ Pentru teste, serviciile folosesc H2 in-memory prin profilul `test`.
 ## Flux Demo Principal
 
 1. Login cu `admin`.
-2. Admin verifica sau creeaza locatie, sala, antrenor, tip clasa si clasa fitness.
+2. Admin verifica sau creeaza locatie, sala, antrenor, tip clasa si clasa fitness folosind dropdown-urile din paginile CRUD.
 3. Login cu `user`.
 4. User vede clasele disponibile.
-5. User face rezervare.
+5. User face rezervare fara sa completeze manual `clientId`; frontend-ul foloseste `/api/clients/me`.
 6. `booking-service` verifica abonamentul activ si cere catre `gym-service` rezervarea unui slot.
 7. Se creeaza rezervarea si notificarea.
 8. In Eureka apar `AUTH-SERVICE`, `GYM-SERVICE`, `BOOKING-SERVICE`, `API-GATEWAY`.
+
+## Checklist Cerinte
+
+- Microservicii reale: `auth-service`, `gym-service`, `booking-service`.
+- Componente Spring Cloud: Eureka Discovery Server si API Gateway.
+- Securitate: JWT, BCrypt, roluri `ADMIN` si `USER`, endpoint-uri protejate.
+- Persistenta: PostgreSQL cu baze separate pentru fiecare microserviciu business; H2 pentru teste.
+- CRUD, validari, exception handling si logging in serviciile business.
+- Paginare si sortare pentru clase, clienti si rezervari/plati.
+- Comunicare intre microservicii prin OpenFeign si load balancing prin Eureka.
+- Actuator health si Swagger/OpenAPI pe serviciile backend.
+- Frontend React cu login/register, rute protejate, meniu pe roluri, CRUD admin, rezervari si notificari.
+- Teste unitare pe service layer, 3 scenarii integration si JaCoCo cu prag minim de 70% pe service layer.
+- Docker Compose porneste PostgreSQL, Eureka, gateway-ul, serviciile business si frontend-ul.
 
 ## Documentatie
 
 - [Arhitectura](docs/architecture.md)
 - [ER Diagram](docs/er-diagram.md)
 - [API Documentation](docs/api-documentation.md)
-- Screenshots: `docs/screenshots/`
+- [Checklist evaluare](docs/evaluation-checklist.md)
+- [Script demo](docs/demo-script.md)
+- Screenshots:
+  - `docs/screenshots/frontend-dashboard.png`
+  - `docs/screenshots/admin-classes-dropdowns.png`
+  - `docs/screenshots/frontend-404.png`
+  - `docs/screenshots/eureka-services.png`
+  - `docs/screenshots/swagger-auth.png`
 
 ## Branch Strategy
 

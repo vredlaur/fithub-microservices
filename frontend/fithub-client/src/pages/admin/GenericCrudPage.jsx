@@ -80,6 +80,65 @@ function inputType(field) {
   return field.type && !field.type.startsWith('relation') ? field.type : 'text'
 }
 
+function validationRules(field, editing, getValues) {
+  const rules = {}
+  const required = field.required || (field.requiredOnCreate && !editing)
+  const validators = {}
+
+  if (required && field.type !== 'relationMulti') {
+    rules.required = `${field.label} este obligatoriu.`
+  }
+
+  if (required && field.type === 'relationMulti') {
+    validators.requiredList = (value) => {
+      const selected = Array.isArray(value) ? value : [value].filter(Boolean)
+      return selected.length > 0 || `${field.label} este obligatoriu.`
+    }
+  }
+
+  if (field.type === 'email') {
+    rules.pattern = {
+      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      message: 'Email invalid.',
+    }
+  }
+
+  if (field.min !== undefined) {
+    rules.min = {
+      value: field.min,
+      message: `${field.label} trebuie sa fie cel putin ${field.min}.`,
+    }
+  }
+
+  if (field.minLength) {
+    validators.minLength = (value) => {
+      if (!value) return true
+      return value.length >= field.minLength || `${field.label} trebuie sa aiba minimum ${field.minLength} caractere.`
+    }
+  }
+
+  if (field.future) {
+    validators.future = (value) => {
+      if (!value) return true
+      return new Date(value) > new Date() || `${field.label} trebuie sa fie in viitor.`
+    }
+  }
+
+  if (field.afterField) {
+    validators.afterField = (value) => {
+      const start = getValues(field.afterField)
+      if (!value || !start) return true
+      return new Date(value) > new Date(start) || `${field.label} trebuie sa fie dupa ${field.afterLabel || field.afterField}.`
+    }
+  }
+
+  if (Object.keys(validators).length) {
+    rules.validate = validators
+  }
+
+  return rules
+}
+
 export function GenericCrudPage({ config }) {
   const [items, setItems] = useState([])
   const [page, setPage] = useState(0)
@@ -90,7 +149,7 @@ export function GenericCrudPage({ config }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [relationOptions, setRelationOptions] = useState({})
-  const { register, handleSubmit, reset, formState } = useForm({ defaultValues: initialValues(config.fields) })
+  const { register, handleSubmit, reset, formState, getValues } = useForm({ defaultValues: initialValues(config.fields) })
 
   const relationFields = useMemo(() => config.fields.filter((field) => field.source), [config.fields])
   const columns = useMemo(() => ['id', ...config.fields.slice(0, 5).map((field) => field.name)], [config.fields])
@@ -187,7 +246,7 @@ export function GenericCrudPage({ config }) {
           <select
             className="form-select"
             multiple={multiple}
-            {...register(field.name, { required: field.required ? 'Camp obligatoriu.' : false })}
+            {...register(field.name, validationRules(field, editing, getValues))}
           >
             {!multiple && <option value="">Alege...</option>}
             {(relationOptions[field.name] || []).map((option) => (
@@ -210,8 +269,10 @@ export function GenericCrudPage({ config }) {
         <input
           className="form-control"
           type={inputType(field)}
+          min={field.min}
+          step={field.step}
           placeholder={field.placeholder || ''}
-          {...register(field.name, { required: field.required ? 'Camp obligatoriu.' : false })}
+          {...register(field.name, validationRules(field, editing, getValues))}
         />
         <div className="text-danger small">{formState.errors[field.name]?.message}</div>
       </div>
