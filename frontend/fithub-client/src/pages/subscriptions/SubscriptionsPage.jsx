@@ -74,7 +74,7 @@ export function SubscriptionsPage() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-end gap-3 flex-wrap mb-3">
+      <div className="page-heading">
         <div>
           <h1 className="page-title">Abonamente</h1>
           <div className="muted">Alege un abonament activ pentru a putea face rezervari.</div>
@@ -96,7 +96,7 @@ export function SubscriptionsPage() {
             <div className="row g-3">
               {plans.map((plan) => (
                 <div className="col-12 col-md-6" key={plan.id}>
-                  <article className="border rounded p-3 h-100">
+                  <article className="plan-card">
                     <div className="d-flex justify-content-between gap-2 mb-2">
                       <h3 className="h6 fw-bold mb-0">{plan.name}</h3>
                       <span className="badge text-bg-success">{plan.durationDays} zile</span>
@@ -104,7 +104,7 @@ export function SubscriptionsPage() {
                     <div className="muted small mb-2">{plan.description || 'Acces FitHub'}</div>
                     <div className="fs-5 fw-bold mb-3">{price(plan.price)}</div>
                     <button
-                      className="btn btn-brand btn-sm"
+                      className="btn btn-brand btn-sm w-100"
                       type="button"
                       onClick={() => purchase(plan)}
                       disabled={buyingId === plan.id}
@@ -126,22 +126,25 @@ export function SubscriptionsPage() {
                 <CheckCircle2 className="text-success mt-1" size={20} />
                 <div>
                   <div className="fw-semibold">{activeSubscription.subscriptionType?.name}</div>
-                  <div className="muted small">
+                  <div className="muted small mb-2">
                     Activ pana la {formatDate(activeSubscription.endDate)}
                   </div>
+                  <span className="status-pill">ACTIVE</span>
+                  <div>
                   <Link className="btn btn-outline-success btn-sm mt-3" to="/classes">
                     Vezi clasele
                   </Link>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="muted">Nu ai inca un abonament activ.</div>
+              <div className="empty-state">Nu ai inca un abonament activ.</div>
             )}
           </section>
 
           <section className="panel">
             <h2 className="h5 fw-bold mb-3">Istoric plati</h2>
-            {payments.length === 0 && <div className="muted">Nu exista plati.</div>}
+            {payments.length === 0 && <div className="empty-state">Nu exista plati.</div>}
             {payments.map((payment) => (
               <div className="d-flex justify-content-between gap-2 border-bottom py-2" key={payment.id}>
                 <div>

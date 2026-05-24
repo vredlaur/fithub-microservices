@@ -21,7 +21,7 @@ export function ClassesPage() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-end mb-3 gap-2 flex-wrap">
+      <div className="page-heading">
         <div>
           <h1 className="page-title">Clase fitness</h1>
           <div className="muted">Alege o clasa si confirma rezervarea.</div>
@@ -35,12 +35,17 @@ export function ClassesPage() {
       </div>
       {error && <div className="alert alert-danger">{error}</div>}
       <div className="row g-3">
+        {items.length === 0 && !error && (
+          <div className="col-12">
+            <div className="empty-state">Nu exista clase disponibile.</div>
+          </div>
+        )}
         {items.map((item) => (
           <div className="col-12 col-md-6 col-xl-4" key={item.id}>
             <article className="panel h-100">
               <div className="d-flex justify-content-between gap-2">
                 <h2 className="h5 fw-bold">{item.name}</h2>
-                <span className="badge text-bg-success">{item.availableSlots}/{item.capacity}</span>
+                <span className="status-pill">{item.availableSlots}/{item.capacity} locuri</span>
               </div>
               <div className="muted small mb-2">{item.classType?.name} - {item.trainer?.firstName} {item.trainer?.lastName}</div>
               <div className="d-flex align-items-center gap-2 mb-3">

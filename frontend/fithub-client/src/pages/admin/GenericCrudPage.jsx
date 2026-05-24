@@ -328,7 +328,7 @@ export function GenericCrudPage({ config }) {
               <thead>
                 <tr>
                   {columns.map((column) => <th key={column.name}>{column.label || column.name}</th>)}
-                  <th></th>
+                  <th className="action-col"></th>
                 </tr>
               </thead>
               <tbody>
@@ -344,13 +344,15 @@ export function GenericCrudPage({ config }) {
                       const field = config.fields.find((candidate) => candidate.name === column.name) || column
                       return <td key={column.name}>{display(getByPath(item, field.path || field.name), field)}</td>
                     })}
-                    <td className="text-end">
-                      <button className="btn btn-outline-secondary btn-sm me-1" onClick={() => onEdit(item)} title="Editare">
-                        <Edit size={15} />
-                      </button>
-                      <button className="btn btn-outline-danger btn-sm" onClick={() => onDelete(item)} title="Stergere">
-                        <Trash2 size={15} />
-                      </button>
+                    <td className="action-col">
+                      <div className="action-buttons">
+                        <button className="btn btn-outline-secondary btn-sm icon-btn" onClick={() => onEdit(item)} title="Editare">
+                          <Edit size={15} />
+                        </button>
+                        <button className="btn btn-outline-danger btn-sm icon-btn" onClick={() => onDelete(item)} title="Stergere">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

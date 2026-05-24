@@ -73,7 +73,7 @@ export function BookingsPage() {
 
   return (
     <>
-      <div className="mb-3">
+      <div className="page-heading">
         <h1 className="page-title">Rezervari</h1>
         <div className="muted">Rezervarile sunt legate automat de contul autentificat.</div>
       </div>
@@ -98,26 +98,30 @@ export function BookingsPage() {
               <option value="status,desc">status desc</option>
             </select>
           </div>
-          <table className="table table-sm align-middle">
-            <thead><tr><th>ID</th><th>Client</th><th>Clasa</th><th>Data</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {items.length === 0 && (
-                <tr><td colSpan="6">Nu exista rezervari.</td></tr>
-              )}
-              {items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.id}</td>
-                  <td>{item.client?.firstName} {item.client?.lastName}</td>
-                  <td>{classById.get(item.fitnessClassId)?.name || `#${item.fitnessClassId}`}</td>
-                  <td>{item.bookingDate?.replace('T', ' ').slice(0, 16)}</td>
-                  <td>{item.status}</td>
-                  <td className="text-end">
-                    <button className="btn btn-outline-danger btn-sm" onClick={() => remove(item)}><Trash2 size={15} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table className="table table-sm align-middle bookings-table">
+              <thead><tr><th>ID</th><th>Client</th><th>Clasa</th><th>Data</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {items.length === 0 && (
+                  <tr><td colSpan="6">Nu exista rezervari.</td></tr>
+                )}
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.id}</td>
+                    <td>{item.client?.firstName} {item.client?.lastName}</td>
+                    <td>{classById.get(item.fitnessClassId)?.name || `#${item.fitnessClassId}`}</td>
+                    <td>{item.bookingDate?.replace('T', ' ').slice(0, 16)}</td>
+                    <td><span className="status-pill">{item.status}</span></td>
+                    <td className="text-end">
+                      <button className="btn btn-outline-danger btn-sm" onClick={() => remove(item)} title="Anuleaza">
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div className="btn-group btn-group-sm">
             <button className="btn btn-outline-secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>Prev</button>
             <button className="btn btn-outline-secondary" disabled>{page + 1}/{totalPages}</button>
